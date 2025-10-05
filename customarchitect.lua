@@ -2,7 +2,7 @@ local StarterGui = game:GetService("StarterGui")
 StarterGui:SetCore("SendNotification", {
 	Title = "Custom Architect",
 	Text = "Made By Velocity",
-	Duration = 5
+	Duration = 6
 })
 
 -- ====================================
