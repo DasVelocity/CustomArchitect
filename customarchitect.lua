@@ -1,13 +1,51 @@
+--[[                                                                                                                                                                                                                                              
+
+                                                             %   
+                                                          ##*#   
+                                                       #*+*#     
+                                                    #**=*##      
+                                                  **+=*##        
+            ##*+####                            **+=*##          
+             %###*+-=##                      ***+=**##           
+              #%###**++##                  +++++**##             
+                %%####***##              +++++**##               
+                  %####***##           +++++***##                
+           =+      #%#####*###       ++++++**##                  
+          ++=-==     %#########    +++++++**#                    
+           +++=-==    ##########%====++++**                      
+            *++==-==   ########=====+++***                       
+              *++==-==   ####=======++**                         
+               *++=====+  ----=====++*                           
+                *+++==-=------====++*                            
+                 *+++============+#*==+                          
+                  +*+++========+#*++==-=+                        
+                  ++*+++++===+  **+++==--=+                      
+                -==+#*++++++     #**+++===-==+           =====+  
+              ----=+* *+++         ***++++===---==========+++*   
+             ----==    *             +**+++++=========+++++*     
+            ----===                     ****+++++++++++**+       
+            -----==                          *******+            
+           ------==                                              
+           =-------==                       +++++++*             
+            =---------=====++ =+==============++**               
+            -===------------====----=====++++**                  
+              ========================++++**                     
+                =++===============++++++                         
+                     ++++++++++++*                               
+                                                         
+
+                    Devloper: Velocity
+                         
+
+]]
+
 local StarterGui = game:GetService("StarterGui")
 StarterGui:SetCore("SendNotification", {
 	Title = "Custom Architect",
-	Text = "Made By Velocity",
-	Duration = 6
+	Text = "Made By Velocity DONT SKID",
+	Duration = 10
 })
 
--- ====================================
--- COLOR DEFINITIONS
--- ====================================
 local COLOR_PRESETS = {
 	Red = Color3.fromRGB(255, 0, 0),
 	Orange = Color3.fromRGB(255, 165, 0),
@@ -58,10 +96,6 @@ local COLOR_PRESETS = {
 
 local selectedColor = COLOR_PRESETS[CUSTOM_COLOR] or Color3.fromRGB(0, 162, 255)
 
--- ====================================
--- MAIN SCRIPT - DO NOT EDIT BELOW
--- ====================================
-
 local rs = game:GetService("ReplicatedStorage")
 local plr = game:GetService("Players").LocalPlayer
 local hum = (plr.Character or plr.CharacterAdded:Wait()):WaitForChild("Humanoid")
@@ -73,14 +107,9 @@ task.spawn(function()
 	end
 end)
 
--- ====================================
--- IMPROVED PROXIMITY PROMPT DETECTION
--- ====================================
-
 local connectedPrompts = {}
 
 local function isInsideKillModel(instance)
-	-- Traverse up the parent hierarchy to find if this instance is inside the kill model
 	local current = instance
 	while current and current ~= workspace do
 		if current.Name == KILL_MODEL_NAME then
@@ -92,9 +121,7 @@ local function isInsideKillModel(instance)
 end
 
 local function connectPrompt(v)
-	-- Check if it's a ProximityPrompt and we haven't connected it yet
 	if v:IsA("ProximityPrompt") and not connectedPrompts[v] then
-		-- Check if this prompt is anywhere inside the kill model
 		if isInsideKillModel(v) then
 			print("Found ProximityPrompt inside " .. KILL_MODEL_NAME .. ": " .. v:GetFullName())
 			
@@ -105,10 +132,8 @@ local function connectPrompt(v)
 				end
 			end)
 			
-			-- Store the connection so we don't duplicate it
 			connectedPrompts[v] = connection
 			
-			-- Clean up if the prompt is removed
 			v.Destroying:Connect(function()
 				if connectedPrompts[v] then
 					connectedPrompts[v]:Disconnect()
@@ -119,30 +144,22 @@ local function connectPrompt(v)
 	end
 end
 
--- Connect to all existing descendants in workspace
 for _, v in ipairs(workspace:GetDescendants()) do
 	connectPrompt(v)
 end
 
--- Listen for new descendants being added
 workspace.DescendantAdded:Connect(connectPrompt)
 
--- Also specifically watch for the kill model being added
 workspace.ChildAdded:Connect(function(child)
 	if child.Name == KILL_MODEL_NAME then
-		print("Kill model detected: " .. KILL_MODEL_NAME)
-		-- Scan all its descendants for proximity prompts
+		print("kill model detected: " .. KILL_MODEL_NAME)
 		for _, desc in ipairs(child:GetDescendants()) do
 			connectPrompt(desc)
 		end
 	end
 end)
 
-print("Proximity prompt detection initialized for model: " .. KILL_MODEL_NAME)
-
--- ====================================
--- VISUAL CUSTOMIZATION
--- ====================================
+print("proximity prompt detection initialized for model: " .. KILL_MODEL_NAME)
 
 local function recolorParticle(particle)
 	if particle and particle:IsA("ParticleEmitter") then
@@ -229,10 +246,6 @@ task.spawn(function()
 		end
 	end
 end)
-
--- ====================================
--- UI COLOR CUSTOMIZATION - HELPFULDIALOGUE
--- ====================================
 
 task.spawn(function()
 	local Players = game:GetService("Players")
@@ -371,3 +384,4 @@ print("Kill Model:", KILL_MODEL_NAME)
 print("Moon Texture:", MOON_TEXTURE_ID)
 print("Moon LightEmission:", MOON_LIGHT_EMISSION)
 print("Helpful Light Factor:", HELPFUL_LIGHTEN_FACTOR)
+
