@@ -1,4 +1,3 @@
-
 local StarterGui = game:GetService("StarterGui")
 StarterGui:SetCore("SendNotification", {
 	Title = "Custom Architect",
@@ -6,11 +5,9 @@ StarterGui:SetCore("SendNotification", {
 	Duration = 5
 })
 
-
 -- ====================================
 -- COLOR DEFINITIONS
 -- ====================================
-
 local COLOR_PRESETS = {
 	Red = Color3.fromRGB(255, 0, 0),
 	Orange = Color3.fromRGB(255, 165, 0),
@@ -61,9 +58,8 @@ local COLOR_PRESETS = {
 
 local selectedColor = COLOR_PRESETS[CUSTOM_COLOR] or Color3.fromRGB(0, 162, 255)
 
-
 -- ====================================
--- CORE VARIABLES
+-- MAIN SCRIPT - DO NOT EDIT BELOW
 -- ====================================
 
 local rs = game:GetService("ReplicatedStorage")
@@ -71,73 +67,81 @@ local plr = game:GetService("Players").LocalPlayer
 local hum = (plr.Character or plr.CharacterAdded:Wait()):WaitForChild("Humanoid")
 local event = rs.RemotesFolder.DeathHint
 
-
--- ====================================
--- DEATH HINT LOOP
--- ====================================
-
 task.spawn(function()
 	while task.wait(3) do
 		firesignal(event.OnClientEvent, HINTS, HINTS_COLOR)
 	end
 end)
 
-
 -- ====================================
--- UNIVERSAL MODEL KILL LOGIC
+-- IMPROVED PROXIMITY PROMPT DETECTION
 -- ====================================
 
-local function connectPromptInstance(prompt)
-	if not prompt or not prompt:IsA("ProximityPrompt") then return end
-	if prompt:GetAttribute and prompt:GetAttribute("CA_Connected") then return end
+local connectedPrompts = {}
 
-	prompt.Triggered:Connect(function(playerWhoTriggered)
-		if playerWhoTriggered == plr then
-			hum.Health = 0
+local function isInsideKillModel(instance)
+	-- Traverse up the parent hierarchy to find if this instance is inside the kill model
+	local current = instance
+	while current and current ~= workspace do
+		if current.Name == KILL_MODEL_NAME then
+			return true
 		end
-	end)
+		current = current.Parent
+	end
+	return false
+end
 
-	if prompt.SetAttribute then
-		prompt:SetAttribute("CA_Connected", true)
+local function connectPrompt(v)
+	-- Check if it's a ProximityPrompt and we haven't connected it yet
+	if v:IsA("ProximityPrompt") and not connectedPrompts[v] then
+		-- Check if this prompt is anywhere inside the kill model
+		if isInsideKillModel(v) then
+			print("Found ProximityPrompt inside " .. KILL_MODEL_NAME .. ": " .. v:GetFullName())
+			
+			local connection = v.Triggered:Connect(function(p)
+				if p == plr then
+					print("Kill prompt triggered!")
+					hum.Health = 0
+				end
+			end)
+			
+			-- Store the connection so we don't duplicate it
+			connectedPrompts[v] = connection
+			
+			-- Clean up if the prompt is removed
+			v.Destroying:Connect(function()
+				if connectedPrompts[v] then
+					connectedPrompts[v]:Disconnect()
+					connectedPrompts[v] = nil
+				end
+			end)
+		end
 	end
 end
 
-local function scanModelForPrompts(model)
-	if not model or not model:IsA("Model") then return end
-	if model.Name ~= KILL_MODEL_NAME then return end
-
-	for _, desc in ipairs(model:GetDescendants()) do
-		if desc:IsA("ProximityPrompt") then
-			connectPromptInstance(desc)
-		end
-	end
+-- Connect to all existing descendants in workspace
+for _, v in ipairs(workspace:GetDescendants()) do
+	connectPrompt(v)
 end
 
-for _, obj in ipairs(workspace:GetDescendants()) do
-	if obj:IsA("Model") and obj.Name == KILL_MODEL_NAME then
-		scanModelForPrompts(obj)
-	elseif obj:IsA("ProximityPrompt") then
-		local anc = obj:FindFirstAncestorWhichIsA and obj:FindFirstAncestorWhichIsA("Model")
-		if anc and anc.Name == KILL_MODEL_NAME then
-			connectPromptInstance(obj)
-		end
-	end
-end
+-- Listen for new descendants being added
+workspace.DescendantAdded:Connect(connectPrompt)
 
-workspace.DescendantAdded:Connect(function(desc)
-	if desc:IsA("Model") then
-		scanModelForPrompts(desc)
-	elseif desc:IsA("ProximityPrompt") then
-		local anc = desc:FindFirstAncestorWhichIsA and desc:FindFirstAncestorWhichIsA("Model")
-		if anc and anc.Name == KILL_MODEL_NAME then
-			connectPromptInstance(desc)
+-- Also specifically watch for the kill model being added
+workspace.ChildAdded:Connect(function(child)
+	if child.Name == KILL_MODEL_NAME then
+		print("Kill model detected: " .. KILL_MODEL_NAME)
+		-- Scan all its descendants for proximity prompts
+		for _, desc in ipairs(child:GetDescendants()) do
+			connectPrompt(desc)
 		end
 	end
 end)
 
+print("Proximity prompt detection initialized for model: " .. KILL_MODEL_NAME)
 
 -- ====================================
--- VISUAL RECOLOR FUNCTIONS
+-- VISUAL CUSTOMIZATION
 -- ====================================
 
 local function recolorParticle(particle)
@@ -226,9 +230,8 @@ task.spawn(function()
 	end
 end)
 
-
 -- ====================================
--- UI COLOR CUSTOMIZATION - HELPFUL DIALOGUE
+-- UI COLOR CUSTOMIZATION - HELPFULDIALOGUE
 -- ====================================
 
 task.spawn(function()
@@ -268,6 +271,51 @@ task.spawn(function()
 				us.Thickness = us.Thickness or 1
 			end)
 		end
+
+		local function enforce()
+			if not lbl.Parent then return end
+			if lbl:IsA("TextLabel") then
+				pcall(function()
+					if lbl.TextColor3 ~= lighter then
+						lbl.TextColor3 = lighter
+					end
+					local ug2 = lbl:FindFirstChildOfClass("UIGradient")
+					if ug2 then
+						ug2.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, lighter), ColorSequenceKeypoint.new(1, lighter) })
+					end
+					local us2 = lbl:FindFirstChildOfClass("UIStroke")
+					if us2 then
+						us2.Color = selectedColor
+					end
+				end)
+			end
+		end
+
+		local ok, conn = pcall(function()
+			return lbl:GetPropertyChangedSignal("TextColor3"):Connect(enforce)
+		end)
+		if ok and conn then
+			lbl.ChildAdded:Connect(function(child)
+				task.wait(0.02)
+				if child:IsA("UIGradient") or child:IsA("UIStroke") then
+					enforce()
+				end
+			end)
+		end
+
+		local t0 = tick()
+		local heartbeatConn
+		heartbeatConn = RunService.Heartbeat:Connect(function()
+			if not lbl.Parent then
+				heartbeatConn:Disconnect()
+				return
+			end
+			if tick() - t0 > 1.2 then
+				heartbeatConn:Disconnect()
+				return
+			end
+			enforce()
+		end)
 	end
 
 	local function findAndApply()
@@ -285,7 +333,10 @@ task.spawn(function()
 		return false
 	end
 
-	if findAndApply() then return end
+	if findAndApply() then
+		print("Loaded custom death visuals")
+		return
+	end
 
 	local function descendantListener(desc)
 		if not desc or not desc:IsA("TextLabel") then return end
@@ -293,12 +344,18 @@ task.spawn(function()
 			local anc = desc:FindFirstAncestor("Death")
 			if anc and anc.Parent and anc.Parent.Name == "MainUI" then
 				applyToHelpful(desc)
+				print("HelpfulDialogue found and recolored")
 			end
 		end
 	end
 
 	pcall(function()
-		player.PlayerGui.DescendantAdded:Connect(descendantListener)
+		if player and player:FindFirstChild("PlayerGui") then
+			player.PlayerGui.DescendantAdded:Connect(descendantListener)
+		else
+			player:WaitForChild("PlayerGui")
+			player.PlayerGui.DescendantAdded:Connect(descendantListener)
+		end
 	end)
 
 	task.spawn(function()
@@ -314,5 +371,3 @@ print("Kill Model:", KILL_MODEL_NAME)
 print("Moon Texture:", MOON_TEXTURE_ID)
 print("Moon LightEmission:", MOON_LIGHT_EMISSION)
 print("Helpful Light Factor:", HELPFUL_LIGHTEN_FACTOR)
-
-
