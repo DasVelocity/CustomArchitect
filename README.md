@@ -4,7 +4,7 @@ A small configurable loader for Custom Architect.
 
 ## Usage
 
-Put `customarchitect.lua` in your GitHub repo, then use the **Raw** GitHub link:
+Put `main.lua` in your executor, then fill in the configs to your liking:
 
 ```lua
 local CustomArchitect = loadstring(game:HttpGet("YOUR_RAW_GITHUB_LINK"))()
@@ -23,10 +23,12 @@ CustomArchitect({
 })
 ```
 
-That's it. Change the values inside the table to customize it.
+That's it. Change the values inside the table to customize it and execute it.
 
 ## Colors
 
 Examples: `Blue`, `Violet`, `Pink`, `Red`, `Green`, `Cyan`, `Gold`, `Teal`, `White`, `Black`.
 
 If an invalid color is used, it falls back to `Blue`.
+
+Made by Velocity
