@@ -7,7 +7,7 @@ A small configurable loader for Custom Architect.
 Put `main.lua` in your executor, then fill in the configs to your liking:
 
 ```lua
-local CustomArchitect = loadstring(game:HttpGet("YOUR_RAW_GITHUB_LINK"))()
+local CustomArchitect = loadstring(game:HttpGet("[YOUR_RAW_GITHUB_LINK](https://raw.githubusercontent.com/DasVelocity/CustomArchitect/refs/heads/main/source.lua)"))()
 
 CustomArchitect({
 	CUSTOM_COLOR = "Violet",
